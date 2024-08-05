@@ -1,4 +1,5 @@
 export type PaymentGatewayProps = {
+  url: string;
   key: string;
   amount: number;
   currency: string;
