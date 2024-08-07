@@ -112,14 +112,10 @@ const App: React.FC = () => {
     <div>
       {config && (
         <div className="max-w-xl w-96  mx-auto shadow-lg rounded-lg overflow-hidden">
-          <div className="p-4 flex bg-[#1E90FF] items-center justify-between">
+          <div className="p-4 flex bg-primary items-center justify-between">
             <div className="flex items-center">
               <Avatar>
-                <AvatarImage
-                  src={config?.image}
-                  alt="Merchant Logo"
-                  className="ring-4 border ring-white"
-                />
+                <AvatarImage src={config?.image} alt="Merchant Logo" />
                 <AvatarFallback>P</AvatarFallback>
               </Avatar>
               <div className="ml-4">
@@ -143,11 +139,9 @@ const App: React.FC = () => {
             </Button>
           </div>
 
-          <div className="p-4 ">
+          <div className="p-4 bg-white ">
             <div className="mb-4">
-              <h3 className="text-lg font-semibold text-white">
-                Pay With UPI QR
-              </h3>
+              <h3 className="text-lg font-semibold">Pay With UPI QR</h3>
               <div className="border p-4 rounded-md flex items-center bg-white">
                 <img
                   src="/placeholder.svg"
@@ -186,7 +180,7 @@ const App: React.FC = () => {
               </div>
             </div>
             <div className="mb-4">
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold">
                 Pay With UPI ID/ Mobile Number
               </h3>
               <div className="border p-4 rounded-md bg-white">
@@ -231,9 +225,7 @@ const App: React.FC = () => {
               </div>
             </div>
             <div className="flex justify-between items-center">
-              <div className="text-lg font-semibold text-white">
-                ₹ {config?.amount}
-              </div>
+              <div className="text-lg font-semibold">₹ {config?.amount}</div>
               <Button
                 disabled={isProcessing}
                 onClick={() => handlePayment()}
