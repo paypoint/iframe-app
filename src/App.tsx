@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { X } from "lucide-react";
-import { BadgeCheck } from "lucide-react";
+import { X, BadgeCheck } from "lucide-react";
 import { useCountdown } from "usehooks-ts";
 
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,13 +18,8 @@ import googlepay from "@/assets/googlepay.svg";
 import cred from "@/assets/cred_circle.png";
 import paytm from "@/assets/paytm.svg";
 
+import { formatCountdown } from "@/lib/utils";
 import { PaymentGatewayProps } from "@/types";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "./components/ui/accordion";
 
 const App: React.FC = () => {
   const [config, setConfig] = useState<PaymentGatewayProps>();
@@ -27,7 +27,7 @@ const App: React.FC = () => {
 
   const [count, { startCountdown, stopCountdown, resetCountdown }] =
     useCountdown({
-      countStart: 60,
+      countStart: 120,
       intervalMs: 1000,
     });
 
@@ -131,9 +131,9 @@ const App: React.FC = () => {
               </div>
             </div>
             <Button
-              variant={"ghost"}
               onClick={() => sendMessageToParent()}
               size={"icon"}
+              className="hover:bg-accent/10 hover:text-accent-foreground"
             >
               <X className="text-white h-6 w-6" />
             </Button>
@@ -172,9 +172,11 @@ const App: React.FC = () => {
                     <img width={16} height={16} src={cred} alt="cred-logo" />
                     <img width={16} height={16} src={paytm} alt="paytm-logo" />
                   </div>
-                  <p className="text-sm text-red-500 mt-2">
+                  <p className="text-xs text-red-500 mt-2">
                     QR Code is valid for{" "}
-                    <span className="text-red-500">{count}</span> minutes
+                    <span className="text-red-500">
+                      {formatCountdown(count)}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -209,7 +211,6 @@ const App: React.FC = () => {
                         >
                           UPI ID/ Mobile Number
                         </label>
-                        {/* <Check className="h-6 w-6 text-[#1E90FF]" /> */}
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
