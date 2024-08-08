@@ -37,4 +37,4 @@ export type EventType =
   | "TXN_ERROR"
   | "AMOUNT_ERROR"
   | "ERROR"
-  | "CHILD_MESSAGE";
+  | "USER_DISMISSED_HOME_PAGE";
