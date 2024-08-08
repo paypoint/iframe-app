@@ -25,3 +25,16 @@ export type PaymentPropsMessage = {
   type: "PAYMENT_PROPS";
   payload: PaymentGatewayProps;
 };
+
+export type Message = {
+  type: EventType;
+  payment_id?: string;
+  message?: string;
+};
+
+export type EventType =
+  | "TXN_SUCCESS"
+  | "TXN_ERROR"
+  | "AMOUNT_ERROR"
+  | "ERROR"
+  | "CHILD_MESSAGE";

@@ -1,3 +1,4 @@
+import { Message } from "@/types";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -16,4 +17,6 @@ export function formatCountdown(seconds: number): string {
   }`;
 }
 
-// export
+export function sendMessageToParent(message: Message, url?: string) {
+  window.parent.postMessage(message, url || "*");
+}
