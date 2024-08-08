@@ -1,6 +1,6 @@
 import { siteConfig } from "@/lib/config";
 import { APIEndPoints } from "@/types";
-import axios from "axios";
+import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 
 export const baseURL = siteConfig.API_UAT_URL;
 
@@ -14,23 +14,12 @@ const client = axios.create({
 type Request = { url: APIEndPoints; requestBody: string; headers: any };
 
 class App {
-  post<TResponse>({ url, requestBody, headers }: Request) {
-    console.log("request", headers);
-    return client.post<TResponse>(
-      url,
-      {
-        requestBody,
-      },
-      {
-        headers: headers,
-      }
-    );
+  post<TResponse>({ url, requestBody }: Request, config?: AxiosRequestConfig) {
+    return client.post<TResponse>(url, requestBody, config);
   }
 
-  get<TResponse>({ url }: Request) {
-    return client.get<TResponse>(url, {
-      data: {},
-    });
+  get<TResponse>({ url, requestBody }: Request, config?: AxiosRequestConfig) {
+    return client.get<TResponse>(url, { params: requestBody, ...config });
   }
 }
 

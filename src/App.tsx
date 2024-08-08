@@ -34,7 +34,7 @@ import { formatCountdown, sendMessageToParent } from "@/lib/utils";
 import { MOBILE_NUMBER_REGEX, UPI_ID_REGEX } from "@/lib/constants";
 
 import { PaymentGatewayProps } from "@/types";
-import api from "./services/api";
+import api from "@/services/api";
 import crypto from "@/lib/crypto";
 
 const formSchema = z.object({
