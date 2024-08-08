@@ -29,7 +29,11 @@ import googlepay from "@/assets/googlepay.svg";
 import cred from "@/assets/cred_circle.png";
 import paytm from "@/assets/paytm.svg";
 
-import { formatCountdown, sendMessageToParent } from "@/lib/utils";
+import {
+  formatCountdown,
+  sendMessageToParent,
+  thousandSeperator,
+} from "@/lib/utils";
 import { MOBILE_NUMBER_REGEX, UPI_ID_REGEX } from "@/lib/constants";
 
 import { GetOrderDetailsAPIResponseType, PaymentGatewayProps } from "@/types";
@@ -356,7 +360,7 @@ const App: React.FC = () => {
                 <div className="p-4 border-t">
                   <div className="flex justify-between items-center">
                     <div className="text-lg font-semibold">
-                      ₹ {config?.amount}
+                      ₹ {thousandSeperator(config?.amount)}
                     </div>
                     <Button
                       disabled={isProcessing || !form.formState.isValid}

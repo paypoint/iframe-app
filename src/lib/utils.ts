@@ -20,3 +20,14 @@ export function formatCountdown(seconds: number): string {
 export function sendMessageToParent(message: Message, url?: string) {
   window.parent.postMessage(message, url || "*");
 }
+
+export function thousandSeperator(value: string | number) {
+  return String(value)
+    .split("")
+    .reverse()
+    .join("")
+    .replace(/(\d{3}\B)/g, "$1,")
+    .split("")
+    .reverse()
+    .join("");
+}
