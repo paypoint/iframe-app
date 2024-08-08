@@ -15,3 +15,5 @@ export function formatCountdown(seconds: number): string {
     minutes !== 1 ? "s" : ""
   }`;
 }
+
+// export
