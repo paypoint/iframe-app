@@ -6,6 +6,7 @@ export type PaymentGatewayProps = {
   name: string;
   image: string;
   order_id: string;
+  merchantid: number;
   handler: (response: { payment_id: string }) => void;
   prefill: {
     name: string;
@@ -38,3 +39,5 @@ export type EventType =
   | "AMOUNT_ERROR"
   | "ERROR"
   | "USER_DISMISSED_HOME_PAGE";
+
+export type APIEndPoints = "/api/v1/getorderdetails";

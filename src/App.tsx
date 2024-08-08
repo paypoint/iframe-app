@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { X, BadgeCheck, Divide } from "lucide-react";
+import { X, BadgeCheck } from "lucide-react";
+import { type AxiosError } from "axios";
 import { useCountdown } from "usehooks-ts";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +34,8 @@ import { formatCountdown, sendMessageToParent } from "@/lib/utils";
 import { MOBILE_NUMBER_REGEX, UPI_ID_REGEX } from "@/lib/constants";
 
 import { PaymentGatewayProps } from "@/types";
+import api from "./services/api";
+import crypto from "@/lib/crypto";
 
 const formSchema = z.object({
   upiIdOrMobile: z
@@ -62,6 +65,7 @@ const App: React.FC = () => {
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     console.log(values);
     setOpenPaymentModal(true);
+    getOrderDetails();
   };
 
   useEffect(() => {
@@ -81,14 +85,6 @@ const App: React.FC = () => {
       window.removeEventListener("message", handleMessage);
     };
   }, []);
-
-  const apiCall = async () => {
-    const response = await fetch("/api")
-      .then((response) => response.json())
-      .then((json) => console.log(json));
-
-    console.log("response", response);
-  };
 
   const handlePayment = () => {
     setIsProcessing(true);
@@ -132,6 +128,33 @@ const App: React.FC = () => {
         }
       }
     }, 2000);
+  };
+
+  const getOrderDetails = async () => {
+    const body = {
+      receipt: "U2408050003160233037",
+      amount: "10.00",
+    };
+    const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
+    const headers = {
+      "x-api-key": "Basic TUExeEo1cHNhajp1eGZSTGUxbHd0S1k=",
+      merchantid: config?.merchantid,
+      orderid: config?.order_id,
+    };
+
+    await api.app
+      .post<any>({
+        url: "/api/v1/getorderdetails",
+        requestBody: encryptedBody,
+        headers: headers,
+      })
+      .then(async (res) => {
+        const { data } = res;
+        if (data.status === "Success") {
+        } else {
+        }
+      })
+      .catch((error: AxiosError) => {});
   };
 
   return (
