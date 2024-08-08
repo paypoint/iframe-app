@@ -15,7 +15,6 @@ type Request = { url: APIEndPoints; requestBody: string; headers: any };
 
 class App {
   post<TResponse>({ url, requestBody, headers }: Request) {
-    console.log("request", headers);
     return client.post<TResponse>(
       url,
       {

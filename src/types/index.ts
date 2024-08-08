@@ -41,3 +41,15 @@ export type EventType =
   | "USER_DISMISSED_HOME_PAGE";
 
 export type APIEndPoints = "/api/v1/getorderdetails";
+
+export type APIResponseType = {
+  resultCode: "200" | "400" | "500";
+  resultStatus: "TXN";
+  resultMessage: "Success" | "Failure";
+};
+
+export type GetOrderDetailsAPIResponseType = {
+  name: string;
+  authToken: string;
+  ExpiryIn: number;
+} & APIResponseType;

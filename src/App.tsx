@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { X, BadgeCheck } from "lucide-react";
-import { type AxiosError } from "axios";
 import { useCountdown } from "usehooks-ts";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,8 +32,8 @@ import paytm from "@/assets/paytm.svg";
 import { formatCountdown, sendMessageToParent } from "@/lib/utils";
 import { MOBILE_NUMBER_REGEX, UPI_ID_REGEX } from "@/lib/constants";
 
-import { PaymentGatewayProps } from "@/types";
-import api from "./services/api";
+import { GetOrderDetailsAPIResponseType, PaymentGatewayProps } from "@/types";
+import api from "@/services/api";
 import crypto from "@/lib/crypto";
 
 const formSchema = z.object({
@@ -47,6 +46,8 @@ const formSchema = z.object({
 });
 const App: React.FC = () => {
   const [config, setConfig] = useState<PaymentGatewayProps>();
+  const [orderDetails, setOrderDetails] =
+    useState<GetOrderDetailsAPIResponseType>();
   const [isProcessing, setIsProcessing] = useState(false);
   const [openPaymentModal, setOpenPaymentModal] = useState(false);
 
@@ -63,18 +64,19 @@ const App: React.FC = () => {
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values);
     setOpenPaymentModal(true);
-    getOrderDetails();
   };
 
   useEffect(() => {
-    const handleMessage = (event: {
+    const handleMessage = async (event: {
       data: { type: string; message: string };
     }) => {
       if (event.data.type === "SET_CONFIG") {
         const data = JSON.parse(event.data.message) as PaymentGatewayProps;
-        setConfig(data);
+        if (data) {
+          await getOrderDetails(data);
+          setConfig(data);
+        }
       }
       startCountdown();
     };
@@ -85,6 +87,42 @@ const App: React.FC = () => {
       window.removeEventListener("message", handleMessage);
     };
   }, []);
+
+  const getOrderDetails = async (data: PaymentGatewayProps) => {
+    const body = {
+      receipt: "U2408050003160233037",
+      amount: data.amount,
+    };
+    const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
+    const headers = {
+      "x-api-key": "Basic TUExeEo1cHNhajp1eGZSTGUxbHd0S1k=",
+      merchantid: data.merchantid,
+      orderid: data.order_id,
+    };
+    try {
+      const res = await api.app.post<string>({
+        url: "/api/v1/getorderdetails",
+        requestBody: encryptedBody,
+        headers: headers,
+      });
+      const decryptedResponse: GetOrderDetailsAPIResponseType = JSON.parse(
+        crypto.CryptoGraphDecrypt(res.data)
+      );
+      if (decryptedResponse.resultStatus === "TXN") {
+        setOrderDetails(decryptedResponse);
+      } else {
+        sendMessageToParent(
+          { type: "ERROR", message: decryptedResponse.resultMessage },
+          config?.url
+        );
+      }
+    } catch (error: any) {
+      sendMessageToParent(
+        { type: "ERROR", message: error.message },
+        config?.url
+      );
+    }
+  };
 
   const handlePayment = () => {
     setIsProcessing(true);
@@ -128,33 +166,6 @@ const App: React.FC = () => {
         }
       }
     }, 2000);
-  };
-
-  const getOrderDetails = async () => {
-    const body = {
-      receipt: "U2408050003160233037",
-      amount: "10.00",
-    };
-    const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
-    const headers = {
-      "x-api-key": "Basic TUExeEo1cHNhajp1eGZSTGUxbHd0S1k=",
-      merchantid: config?.merchantid,
-      orderid: config?.order_id,
-    };
-
-    await api.app
-      .post<any>({
-        url: "/api/v1/getorderdetails",
-        requestBody: encryptedBody,
-        headers: headers,
-      })
-      .then(async (res) => {
-        const { data } = res;
-        if (data.status === "Success") {
-        } else {
-        }
-      })
-      .catch((error: AxiosError) => {});
   };
 
   return (
