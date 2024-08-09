@@ -59,11 +59,13 @@ const formSchema = z.object({
     }, "Invalid UPI ID or Mobile Number"),
 });
 const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
+  const MAX_QR_TIMEOUT = 120;
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [openPaymentModal, setOpenPaymentModal] = useState(false);
   const [qRImage, setQRImage] = useState<string>();
   const [count, { startCountdown, resetCountdown }] = useCountdown({
-    countStart: 0,
+    countStart: MAX_QR_TIMEOUT,
     intervalMs: 1000,
   });
 
@@ -75,6 +77,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
   });
 
   const onLoadQR = async () => {
+    resetCountdown();
     const body = {
       CollectExpiryAfter: 5,
       Amount: config.amount,
@@ -101,7 +104,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       console.log("decryptedResponse", decryptedResponse);
       if (decryptedResponse.resultCode === "000") {
         setQRImage(decryptedResponse.data.qrCodeImage);
-        //   setOrderDetails(decryptedResponse);
+        startCountdown(); // Start the countdown
       } else {
         sendMessageToParent(
           { type: "ERROR", message: decryptedResponse.resultMessage },
@@ -115,7 +118,6 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       );
     }
   };
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const body = {
       vpaAddress: values.upiIdOrMobile,
@@ -204,7 +206,11 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
                 </h3>
                 <div className="border p-4 rounded-md flex  bg-white">
                   <img
-                    src={qRImage ? qRImage : placeHolderQrImage}
+                    src={
+                      count === MAX_QR_TIMEOUT || count <= 0
+                        ? placeHolderQrImage
+                        : qRImage
+                    }
                     alt="QR Code"
                     className="w-36 h-36"
                     width="100"
@@ -212,10 +218,13 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
                     style={{
                       aspectRatio: "100/100",
                       objectFit: "cover",
-                      filter: count <= 0 ? "blur(2px)" : "",
+                      filter:
+                        count === MAX_QR_TIMEOUT || count <= 0
+                          ? "blur(2px)"
+                          : "",
                     }}
                   />
-                  {count <= 0 && (
+                  {(count === MAX_QR_TIMEOUT || count <= 0) && (
                     <Button
                       size={"xs"}
                       onClick={(e) => {
@@ -253,7 +262,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
                         alt="paytm-logo"
                       />
                     </div>
-                    {count <= 0 ? (
+                    {count === MAX_QR_TIMEOUT || count <= 0 ? (
                       <p className="text-xs text-gray-500 mt-2">
                         The previous QR got expired{" "}
                       </p>
