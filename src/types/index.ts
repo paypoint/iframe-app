@@ -7,6 +7,7 @@ export type PaymentGatewayProps = {
   image: string;
   order_id: string;
   merchantid: number;
+  location: GeolocationPosition;
   handler: (response: { payment_id: string }) => void;
   prefill: {
     name: string;
@@ -26,6 +27,13 @@ export type PaymentPropsMessage = {
   type: "PAYMENT_PROPS";
   payload: PaymentGatewayProps;
 };
+
+export type TransactionStatus =
+  | "invalid"
+  | "verifying"
+  | "processing"
+  | "success"
+  | "failure";
 
 export type Message = {
   type: EventType;
@@ -55,7 +63,7 @@ export type GeolocationData = {
 export type APIEndPoints =
   | "/api/v1/getorderdetails"
   | "/api/v1/requestupivalidateaddress"
-  | "/api/v1/RequestUpiCollect"
+  | "/api/v1/generatecollectrequest"
   | "/api/v1/generatedynamicqrcode"
   | "/api/v1/getAllTransactionStatus?refId=";
 
@@ -66,7 +74,7 @@ export type APIResponseType = {
 };
 
 export type GetOrderDetailsAPIResponseType = {
-  result: { name: string; authToken: string; ExpiryIn: number };
+  data: { name: string; authToken: string; ExpiryIn: number };
 } & APIResponseType;
 
 export type GenerateQRCodeAPIResponseType = {

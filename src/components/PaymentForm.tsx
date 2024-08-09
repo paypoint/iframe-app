@@ -41,13 +41,14 @@ import {
   GenerateQRCodeAPIResponseType,
   GetOrderDetailsAPIResponseType,
   PaymentGatewayProps,
+  TransactionStatus,
 } from "@/types";
 import api from "@/services/api";
 import crypto from "@/lib/crypto";
 
 interface PaymentFormProps {
   config: PaymentGatewayProps;
-  orderDetails?: GetOrderDetailsAPIResponseType["result"];
+  orderDetails?: GetOrderDetailsAPIResponseType["data"];
 }
 
 const formSchema = z.object({
@@ -58,12 +59,15 @@ const formSchema = z.object({
       return UPI_ID_REGEX.test(value) || MOBILE_NUMBER_REGEX.test(value);
     }, "Invalid UPI ID or Mobile Number"),
 });
+
 const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
   const MAX_QR_TIMEOUT = 120;
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [openPaymentModal, setOpenPaymentModal] = useState(false);
   const [qRImage, setQRImage] = useState<string>();
+  const [transactionState, setTransactionState] =
+    useState<TransactionStatus>("verifying");
   const [count, { startCountdown, resetCountdown }] = useCountdown({
     countStart: MAX_QR_TIMEOUT,
     intervalMs: 1000,
@@ -78,11 +82,12 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
 
   const onLoadQR = async () => {
     resetCountdown();
+    setIsProcessing(true);
     const body = {
       CollectExpiryAfter: 5,
       Amount: config.amount,
-      Latitude: "19.181970",
-      Longitude: "72.872060",
+      Latitude: config.location.coords.latitude,
+      Longitude: config.location.coords.longitude,
       Location: "400097",
     };
     const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
@@ -98,6 +103,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         requestBody: encryptedBody,
         headers: headers,
       });
+      setIsProcessing(false);
       const decryptedResponse: GenerateQRCodeAPIResponseType = JSON.parse(
         crypto.CryptoGraphDecrypt(res.data)
       );
@@ -106,24 +112,26 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         setQRImage(decryptedResponse.data.qrCodeImage);
         startCountdown(); // Start the countdown
       } else {
-        sendMessageToParent(
-          { type: "ERROR", message: decryptedResponse.resultMessage },
-          config?.url
-        );
+        // sendMessageToParent(
+        //   { type: "ERROR", message: decryptedResponse.resultMessage },
+        //   config?.url
+        // );
       }
     } catch (error: any) {
-      sendMessageToParent(
-        { type: "API_ERROR", message: error.message },
-        config?.url
-      );
+      setIsProcessing(false);
+      //   sendMessageToParent(
+      //     { type: "API_ERROR", message: error.message },
+      //     config?.url
+      //   );
     }
   };
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setOpenPaymentModal(true);
     const body = {
       vpaAddress: values.upiIdOrMobile,
       vpaHolderName: "Manishkumar Patel",
-      Latitude: "19.181970",
-      Longitude: "72.872060",
+      Latitude: config.location.coords.latitude,
+      Longitude: config.location.coords.longitude,
       Location: "400097",
     };
     const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
@@ -133,6 +141,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       merchantid: config.merchantid,
       orderid: config.order_id,
     };
+    setIsProcessing(true);
     try {
       const res = await api.app.post<string>({
         url: "/api/v1/requestupivalidateaddress",
@@ -142,20 +151,73 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       const decryptedResponse: GetOrderDetailsAPIResponseType = JSON.parse(
         crypto.CryptoGraphDecrypt(res.data)
       );
-      console.log("decryptedResponse", decryptedResponse.result);
+      setIsProcessing(false);
+      console.log("decryptedResponse", decryptedResponse.data);
       if (decryptedResponse.resultCode === "000") {
+        setTransactionState("processing");
+
+        await generateCollectRequest();
         //   setOrderDetails(decryptedResponse);
       } else {
-        sendMessageToParent(
-          { type: "ERROR", message: decryptedResponse.resultMessage },
-          config?.url
-        );
+        // sendMessageToParent(
+        //   { type: "ERROR", message: decryptedResponse.resultMessage },
+        //   config?.url
+        // );
       }
     } catch (error: any) {
-      sendMessageToParent(
-        { type: "API_ERROR", message: error.message },
-        config?.url
+      setIsProcessing(false);
+      //   sendMessageToParent(
+      //     { type: "API_ERROR", message: error.message },
+      //     config?.url
+      //   );
+    }
+  };
+
+  const generateCollectRequest = async () => {
+    const body = {
+      vpaAddress: form.getValues("upiIdOrMobile"),
+      vpaHolderName: "Manishkumar Patel",
+      Amount: config.amount,
+      Latitude: config.location.coords.latitude,
+      Longitude: config.location.coords.longitude,
+      Location: "400097",
+    };
+    const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
+    const headers = {
+      Authorization: `bearer ${orderDetails?.authToken}`,
+      "x-api-key": "Basic TUExeEo1cHNhajp1eGZSTGUxbHd0S1k=",
+      merchantid: config.merchantid,
+      orderid: config.order_id,
+    };
+    setIsProcessing(true);
+
+    try {
+      const res = await api.app.post<string>({
+        url: "/api/v1/generatecollectrequest",
+        requestBody: encryptedBody,
+        headers: headers,
+      });
+      const decryptedResponse: GetOrderDetailsAPIResponseType = JSON.parse(
+        crypto.CryptoGraphDecrypt(res.data)
       );
+      debugger;
+      setIsProcessing(false);
+      console.log("decryptedResponse", decryptedResponse.data);
+      if (decryptedResponse.resultCode === "000") {
+        setTransactionState("processing");
+        //   setOrderDetails(decryptedResponse);
+      } else {
+        // sendMessageToParent(
+        //   { type: "ERROR", message: decryptedResponse.resultMessage },
+        //   config?.url
+        // );
+      }
+    } catch (error: any) {
+      setIsProcessing(false);
+      //   sendMessageToParent(
+      //     { type: "API_ERROR", message: error.message },
+      //     config?.url
+      //   );
     }
   };
 
@@ -351,6 +413,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
           </div>
 
           <PaymentModal
+            state={transactionState}
             isOpen={openPaymentModal}
             setIsOpen={setOpenPaymentModal}
           />

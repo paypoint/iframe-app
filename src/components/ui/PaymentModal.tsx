@@ -8,32 +8,68 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "./separator";
 import Loader from "../loader";
+import { TransactionStatus } from "@/types";
 
 type PaymentModalProps = {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  state: TransactionStatus;
 };
 
-export function PaymentModal({ isOpen, setIsOpen }: PaymentModalProps) {
+export function PaymentModal({ isOpen, setIsOpen, state }: PaymentModalProps) {
   return (
     <Sheet modal open={isOpen}>
       <SheetContent side={"bottom"}>
         <SheetHeader className="items-center">
-          <SheetTitle>Payment Processing</SheetTitle>
-          <SheetDescription>
-            Please open UPI app and accept the request from Merchant Name's UPI
-            ID to complete payment
-          </SheetDescription>
-          <Loader />
+          {state === "invalid" && (
+            <>
+              <SheetTitle>Invalid Input</SheetTitle>
+              <SheetDescription>
+                The information you entered is invalid. Please check and try
+                again.
+              </SheetDescription>
+            </>
+          )}
+          {state === "verifying" && (
+            <>
+              <SheetTitle>Verifying</SheetTitle>
+              <SheetDescription>
+                We are verifying your mobile number/UPI ID. Please wait.
+              </SheetDescription>
+              <Loader />
+            </>
+          )}
+          {state === "processing" && (
+            <>
+              <SheetTitle>Payment Processing</SheetTitle>
+              <SheetDescription>
+                Please open your UPI app and accept the request from Merchant
+                Name's UPI ID to complete the payment.
+              </SheetDescription>
+              <Loader />
+            </>
+          )}
+          {state === "success" && (
+            <>
+              <SheetTitle>Payment Successful</SheetTitle>
+              <SheetDescription>
+                Your payment was successful. Thank you!
+              </SheetDescription>
+            </>
+          )}
         </SheetHeader>
 
-        <Separator className="my-4" />
-        <div className="text-xs flex justify-center items-center">
-          Wrong UPI ID/ Mobile Number?{" "}
-          <Button variant={"link"} onClick={() => setIsOpen(false)}>
-            Cancel Payment
-          </Button>
-        </div>
+        {state !== "success" && (
+          <>
+            <Separator className="my-4" />
+            <div className="text-xs flex justify-center items-center">
+              {state !== "invalid" && "Wrong UPI ID/ Mobile Number? "}
+              <Button variant={"link"} onClick={() => setIsOpen(false)}>
+                Cancel Payment
+              </Button>
+            </div>
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );

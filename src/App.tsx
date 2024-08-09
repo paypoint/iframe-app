@@ -13,7 +13,7 @@ import ErrorBoundary from "./services/ErrorBoundary";
 const App: React.FC = () => {
   const [config, setConfig] = useState<PaymentGatewayProps>();
   const [orderDetails, setOrderDetails] =
-    useState<GetOrderDetailsAPIResponseType["result"]>();
+    useState<GetOrderDetailsAPIResponseType["data"]>();
 
   useEffect(() => {
     const handleMessage = async (event: {
@@ -37,7 +37,7 @@ const App: React.FC = () => {
 
   const getOrderDetails = async (data: PaymentGatewayProps) => {
     const body = {
-      receipt: "U2408050003160233037",
+      receipt: "U2408050019100233067",
       amount: data.amount,
     };
     const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
@@ -46,6 +46,7 @@ const App: React.FC = () => {
       merchantid: data.merchantid,
       orderid: data.order_id,
     };
+    debugger;
     try {
       const res = await api.app.post<string>({
         url: "/api/v1/getorderdetails",
@@ -55,9 +56,8 @@ const App: React.FC = () => {
       const decryptedResponse: GetOrderDetailsAPIResponseType = JSON.parse(
         crypto.CryptoGraphDecrypt(res.data)
       );
-      debugger;
       if (decryptedResponse.resultStatus === "TXN") {
-        setOrderDetails(decryptedResponse.result);
+        setOrderDetails(decryptedResponse.data);
       } else {
         sendMessageToParent(
           { type: "ERROR", message: decryptedResponse.resultMessage },
