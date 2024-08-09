@@ -40,7 +40,12 @@ export type EventType =
   | "ERROR"
   | "USER_DISMISSED_HOME_PAGE";
 
-export type APIEndPoints = "/api/v1/getorderdetails";
+export type APIEndPoints =
+  | "/api/v1/getorderdetails"
+  | "/upi/requestupivalidateaddress"
+  | "/upi/RequestUpiCollect"
+  | "/upi/generatedynamicqr"
+  | "/upi/getAllTransactionStatus?refId=";
 
 export type APIResponseType = {
   resultCode: "200" | "400" | "500";

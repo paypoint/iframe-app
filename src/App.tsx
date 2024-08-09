@@ -174,7 +174,7 @@ const App: React.FC = () => {
 
   return (
     <div>
-      {config && (
+      {config ? (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="max-w-xl w-[25rem] mx-auto shadow-lg rounded-lg overflow-hidden">
@@ -220,7 +220,6 @@ const App: React.FC = () => {
                       Pay With UPI QR
                     </h3>
                     <div className="border p-4 rounded-md flex  bg-white">
-                      {/* <div className="relative w-24 h-24 inline-block"> */}
                       <img
                         src="/placeholder.svg"
                         alt="QR Code"
@@ -246,8 +245,6 @@ const App: React.FC = () => {
                           Refresh QR
                         </Button>
                       )}
-
-                      {/* </div> */}
                       <div className="ml-4">
                         <p className="text-gray-700">
                           Scan the QR using any UPI app on your phone.
@@ -379,6 +376,38 @@ const App: React.FC = () => {
             </div>
           </form>
         </Form>
+      ) : (
+        <div className="max-w-xl w-[25rem] mx-auto shadow-lg rounded-lg overflow-hidden">
+          <div className="p-4 flex bg-primary items-center justify-between">
+            <div className="flex items-center">
+              <Avatar>
+                <AvatarImage alt="Merchant Logo" />
+                <AvatarFallback>P</AvatarFallback>
+              </Avatar>
+              <div className="ml-4">
+                <h2 className="text-white text-lg font-semibold">
+                  Loading Information
+                </h2>
+                <div className="flex items-center space-x-1">
+                  <BadgeCheck className="text-green-500 h-4 w-4" />
+                  <span className="text-xs text-white">
+                    DigiKhata Trusted Business
+                  </span>
+                </div>
+              </div>
+            </div>
+            <Button
+              disabled
+              className="hover:bg-accent/10 hover:text-accent-foreground"
+            >
+              <X className="text-white h-6 w-6" />
+            </Button>
+          </div>
+
+          <div className="flex h-96 flex-col justify-center items-center bg-white">
+            <h4>loading..</h4>
+          </div>
+        </div>
       )}
     </div>
   );

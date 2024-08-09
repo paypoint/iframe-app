@@ -1,13 +1,10 @@
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 import { Separator } from "./separator";
 import Loader from "../loader";
@@ -16,11 +13,12 @@ type PaymentModalProps = {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 };
+
 export function PaymentModal({ isOpen, setIsOpen }: PaymentModalProps) {
   return (
     <Sheet modal open={isOpen}>
       <SheetContent side={"bottom"}>
-        <SheetHeader className=" items-center">
+        <SheetHeader className="items-center">
           <SheetTitle>Payment Processing</SheetTitle>
           <SheetDescription>
             Please open UPI app and accept the request from Merchant Name's UPI
@@ -36,10 +34,6 @@ export function PaymentModal({ isOpen, setIsOpen }: PaymentModalProps) {
             Cancel Payment
           </Button>
         </div>
-        {/* <SheetFooter>
-          
-          <Separator className="my-3" />
-        </SheetFooter> */}
       </SheetContent>
     </Sheet>
   );
