@@ -37,24 +37,38 @@ export type EventType =
   | "TXN_SUCCESS"
   | "TXN_ERROR"
   | "AMOUNT_ERROR"
+  | "IFRAME_APP_ERROR"
+  | "API_ERROR"
   | "ERROR"
   | "USER_DISMISSED_HOME_PAGE";
 
+export type CustomErrorT = {
+  image: boolean;
+  Heading: string;
+  Description: string;
+};
+export type GeolocationData = {
+  latitude: number;
+  longitude: number;
+};
+
 export type APIEndPoints =
   | "/api/v1/getorderdetails"
-  | "/upi/requestupivalidateaddress"
-  | "/upi/RequestUpiCollect"
-  | "/upi/generatedynamicqr"
-  | "/upi/getAllTransactionStatus?refId=";
+  | "/api/v1/requestupivalidateaddress"
+  | "/api/v1/RequestUpiCollect"
+  | "/api/v1/generatedynamicqrcode"
+  | "/api/v1/getAllTransactionStatus?refId=";
 
 export type APIResponseType = {
-  resultCode: "200" | "400" | "500";
+  resultCode: "200" | "400" | "500" | "000";
   resultStatus: "TXN";
   resultMessage: "Success" | "Failure";
 };
 
 export type GetOrderDetailsAPIResponseType = {
-  name: string;
-  authToken: string;
-  ExpiryIn: number;
+  result: { name: string; authToken: string; ExpiryIn: number };
+} & APIResponseType;
+
+export type GenerateQRCodeAPIResponseType = {
+  data: { qrCodeImage: string };
 } & APIResponseType;
