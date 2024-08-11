@@ -46,7 +46,6 @@ const App: React.FC = () => {
       merchantid: data.merchantid,
       orderid: data.order_id,
     };
-    debugger;
     try {
       const res = await api.app.post<string>({
         url: "/api/v1/getorderdetails",

@@ -6,17 +6,21 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Separator } from "./separator";
-import Loader from "../loader";
+import { Separator } from "./ui/separator";
+import Loader from "./loader";
 import { TransactionStatus } from "@/types";
 
-type PaymentModalProps = {
+type PaymentStatusModalProps = {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   state: TransactionStatus;
 };
 
-export function PaymentModal({ isOpen, setIsOpen, state }: PaymentModalProps) {
+export function PaymentStatusModal({
+  isOpen,
+  setIsOpen,
+  state,
+}: PaymentStatusModalProps) {
   return (
     <Sheet modal open={isOpen}>
       <SheetContent side={"bottom"}>
@@ -25,8 +29,8 @@ export function PaymentModal({ isOpen, setIsOpen, state }: PaymentModalProps) {
             <>
               <SheetTitle>Invalid Input</SheetTitle>
               <SheetDescription>
-                The information you entered is invalid. Please check and try
-                again.
+                The UPI ID/ Mobile Number you entered is invalid. Please check
+                and try again.
               </SheetDescription>
             </>
           )}

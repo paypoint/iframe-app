@@ -3,6 +3,7 @@ import { X, BadgeCheck } from "lucide-react";
 import { useCountdown } from "usehooks-ts";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 import * as z from "zod";
 
 import {
@@ -14,7 +15,7 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { PaymentModal } from "@/components/ui/PaymentModal";
+import { PaymentStatusModal } from "@/components/PaymentStatusModal";
 import {
   Form,
   FormControl,
@@ -31,6 +32,7 @@ import paytm from "@/assets/paytm.svg";
 import placeHolderQrImage from "@/assets/placeholder-qr.svg";
 
 import {
+  cn,
   formatCountdown,
   sendMessageToParent,
   thousandSeperator,
@@ -112,6 +114,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         setQRImage(decryptedResponse.data.qrCodeImage);
         startCountdown(); // Start the countdown
       } else {
+        toast.error(decryptedResponse.resultMessage);
         // sendMessageToParent(
         //   { type: "ERROR", message: decryptedResponse.resultMessage },
         //   config?.url
@@ -125,6 +128,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       //   );
     }
   };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setOpenPaymentModal(true);
     const body = {
@@ -159,6 +163,8 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         await generateCollectRequest();
         //   setOrderDetails(decryptedResponse);
       } else {
+        setTransactionState("invalid");
+        toast.error(decryptedResponse.resultMessage);
         // sendMessageToParent(
         //   { type: "ERROR", message: decryptedResponse.resultMessage },
         //   config?.url
@@ -200,13 +206,13 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       const decryptedResponse: GetOrderDetailsAPIResponseType = JSON.parse(
         crypto.CryptoGraphDecrypt(res.data)
       );
-      debugger;
       setIsProcessing(false);
       console.log("decryptedResponse", decryptedResponse.data);
       if (decryptedResponse.resultCode === "000") {
         setTransactionState("processing");
         //   setOrderDetails(decryptedResponse);
       } else {
+        toast.error(decryptedResponse.resultMessage);
         // sendMessageToParent(
         //   { type: "ERROR", message: decryptedResponse.resultMessage },
         //   config?.url
@@ -244,6 +250,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
               </div>
             </div>
             <Button
+              disabled={isProcessing}
               onClick={() =>
                 sendMessageToParent(
                   {
@@ -254,7 +261,10 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
                 )
               }
               size={"icon"}
-              className="hover:bg-accent/10 hover:text-accent-foreground"
+              className={cn(
+                "hover:bg-accent/10 hover:text-accent-foreground",
+                isProcessing && "animate-pulse"
+              )}
             >
               <X className="text-white h-6 w-6" />
             </Button>
@@ -288,12 +298,16 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
                   />
                   {(count === MAX_QR_TIMEOUT || count <= 0) && (
                     <Button
+                      disabled={isProcessing}
                       size={"xs"}
                       onClick={(e) => {
                         e.preventDefault();
                         onLoadQR();
                       }}
-                      className="absolute top-48 left-[4.2rem] z-10 px-4"
+                      className={cn(
+                        "absolute top-48 left-[4.2rem] z-10 px-4",
+                        isProcessing && "animate-pulse"
+                      )}
                     >
                       Load QR
                     </Button>
@@ -405,6 +419,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
                 <Button
                   disabled={isProcessing || !form.formState.isValid}
                   type="submit"
+                  className={cn(isProcessing && "animate-pulse")}
                 >
                   Pay Now
                 </Button>
@@ -412,7 +427,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
             </div>
           </div>
 
-          <PaymentModal
+          <PaymentStatusModal
             state={transactionState}
             isOpen={openPaymentModal}
             setIsOpen={setOpenPaymentModal}
