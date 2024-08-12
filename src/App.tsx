@@ -76,7 +76,6 @@ const App: React.FC = () => {
       { type: "IFRAME_APP_ERROR", message: error.message },
       config?.url
     );
-    // You can add additional error handling logic here
   };
 
   return (

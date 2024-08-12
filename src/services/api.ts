@@ -11,7 +11,7 @@ const client = axios.create({
   },
 });
 
-type Request = { url: APIEndPoints; requestBody: string; headers: any };
+type Request = { url: APIEndPoints; requestBody?: string; headers: any };
 
 class App {
   post<TResponse>({ url, requestBody, headers }: Request) {

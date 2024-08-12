@@ -65,7 +65,7 @@ export type APIEndPoints =
   | "/api/v1/requestupivalidateaddress"
   | "/api/v1/generatecollectrequest"
   | "/api/v1/generatedynamicqrcode"
-  | "/api/v1/getAllTransactionStatus?refId=";
+  | `/api/v1/getAllTransactionStatus?refId=${string}`;
 
 export type APIResponseType = {
   resultCode: "200" | "400" | "500" | "000";
@@ -79,4 +79,27 @@ export type GetOrderDetailsAPIResponseType = {
 
 export type GenerateQRCodeAPIResponseType = {
   data: { qrCodeImage: string };
+} & APIResponseType;
+
+export type GetTxnStatusAPI = {
+  data: {
+    TransactionId: string;
+    MessageId: string;
+    ReferenceId: string;
+    CustomerRefNo: string;
+    TransactionDate: string;
+    TxnTypeName: string;
+    TxnStatus: 1 | 2 | 3;
+    PayerAddress: string;
+    PayerName: string;
+    PayeeAddress: string;
+    PayeeName: string;
+    Amount: number;
+    TxnRemarks: string;
+    ResponseMessage: string;
+    CollectTxnStatus: number;
+    ApproveOrDecline: number;
+    PayerAccountNumber?: any;
+    PayeeAccountNumber?: any;
+  };
 } & APIResponseType;

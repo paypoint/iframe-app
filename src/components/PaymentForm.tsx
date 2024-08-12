@@ -37,16 +37,17 @@ import {
   sendMessageToParent,
   thousandSeperator,
 } from "@/lib/utils";
-import { MOBILE_NUMBER_REGEX, UPI_ID_REGEX } from "@/lib/constants";
+import api from "@/services/api";
+import crypto from "@/lib/crypto";
+import { UPI_ID_REGEX } from "@/lib/constants";
 
 import {
   GenerateQRCodeAPIResponseType,
   GetOrderDetailsAPIResponseType,
+  GetTxnStatusAPI,
   PaymentGatewayProps,
   TransactionStatus,
 } from "@/types";
-import api from "@/services/api";
-import crypto from "@/lib/crypto";
 
 interface PaymentFormProps {
   config: PaymentGatewayProps;
@@ -54,16 +55,16 @@ interface PaymentFormProps {
 }
 
 const formSchema = z.object({
-  upiIdOrMobile: z
+  upiId: z
     .string()
-    .min(1, "UPI ID or Mobile Number is required")
+    .min(1, "UPI ID is required")
     .refine((value) => {
-      return UPI_ID_REGEX.test(value) || MOBILE_NUMBER_REGEX.test(value);
-    }, "Invalid UPI ID or Mobile Number"),
+      return UPI_ID_REGEX.test(value);
+    }, "Invalid UPI ID "),
 });
 
 const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
-  const MAX_QR_TIMEOUT = 120;
+  const MAX_QR_TIMEOUT = 420;
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [openPaymentModal, setOpenPaymentModal] = useState(false);
@@ -78,7 +79,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      upiIdOrMobile: "",
+      upiId: "",
     },
   });
 
@@ -105,34 +106,28 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         requestBody: encryptedBody,
         headers: headers,
       });
-      setIsProcessing(false);
+
       const decryptedResponse: GenerateQRCodeAPIResponseType = JSON.parse(
         crypto.CryptoGraphDecrypt(res.data)
       );
       console.log("decryptedResponse", decryptedResponse);
       if (decryptedResponse.resultCode === "000") {
         setQRImage(decryptedResponse.data.qrCodeImage);
-        startCountdown(); // Start the countdown
+        startCountdown();
       } else {
         toast.error(decryptedResponse.resultMessage);
-        // sendMessageToParent(
-        //   { type: "ERROR", message: decryptedResponse.resultMessage },
-        //   config?.url
-        // );
       }
+      setIsProcessing(false);
     } catch (error: any) {
       setIsProcessing(false);
-      //   sendMessageToParent(
-      //     { type: "API_ERROR", message: error.message },
-      //     config?.url
-      //   );
+      toast.error(error.message);
     }
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setOpenPaymentModal(true);
     const body = {
-      vpaAddress: values.upiIdOrMobile,
+      vpaAddress: values.upiId,
       vpaHolderName: "Manishkumar Patel",
       Latitude: config.location.coords.latitude,
       Longitude: config.location.coords.longitude,
@@ -159,29 +154,21 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       console.log("decryptedResponse", decryptedResponse.data);
       if (decryptedResponse.resultCode === "000") {
         setTransactionState("processing");
-
         await generateCollectRequest();
-        //   setOrderDetails(decryptedResponse);
       } else {
         setTransactionState("invalid");
         toast.error(decryptedResponse.resultMessage);
-        // sendMessageToParent(
-        //   { type: "ERROR", message: decryptedResponse.resultMessage },
-        //   config?.url
-        // );
       }
     } catch (error: any) {
       setIsProcessing(false);
-      //   sendMessageToParent(
-      //     { type: "API_ERROR", message: error.message },
-      //     config?.url
-      //   );
+      toast.error(error.message);
+      setOpenPaymentModal(false);
     }
   };
 
   const generateCollectRequest = async () => {
     const body = {
-      vpaAddress: form.getValues("upiIdOrMobile"),
+      vpaAddress: form.getValues("upiId"),
       vpaHolderName: "Manishkumar Patel",
       Amount: config.amount,
       Latitude: config.location.coords.latitude,
@@ -207,23 +194,72 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         crypto.CryptoGraphDecrypt(res.data)
       );
       setIsProcessing(false);
-      console.log("decryptedResponse", decryptedResponse.data);
+      console.log("decryptedResponse", decryptedResponse);
       if (decryptedResponse.resultCode === "000") {
         setTransactionState("processing");
-        //   setOrderDetails(decryptedResponse);
+        await getTxnStatus();
       } else {
         toast.error(decryptedResponse.resultMessage);
-        // sendMessageToParent(
-        //   { type: "ERROR", message: decryptedResponse.resultMessage },
-        //   config?.url
-        // );
+        setTransactionState("verifying");
+        setOpenPaymentModal(false);
       }
     } catch (error: any) {
       setIsProcessing(false);
-      //   sendMessageToParent(
-      //     { type: "API_ERROR", message: error.message },
-      //     config?.url
-      //   );
+      toast.error(error.message);
+      setOpenPaymentModal(false);
+    }
+  };
+
+  const getTxnStatus = async (startTime: number = Date.now()) => {
+    const headers = {
+      Authorization: `bearer ${orderDetails?.authToken}`,
+      "x-api-key": "Basic TUExeEo1cHNhajp1eGZSTGUxbHd0S1k=",
+      merchantid: config.merchantid,
+    };
+
+    try {
+      const res = await api.app.post<string>({
+        url: `/api/v1/getAllTransactionStatus?refId=${config?.order_id}`,
+        requestBody: undefined,
+        headers: headers,
+      });
+
+      const decryptedResponse: GetTxnStatusAPI = JSON.parse(
+        crypto.CryptoGraphDecrypt(res.data)
+      );
+      setIsProcessing(false);
+      console.log("decryptedResponse", decryptedResponse);
+
+      if (decryptedResponse.resultCode === "000") {
+        if (Number(decryptedResponse.data.TxnStatus) === 1) {
+          const elapsedTime = Date.now() - startTime;
+          if (elapsedTime < 120000) {
+            setTimeout(() => {
+              getTxnStatus(startTime);
+            }, 5000);
+          } else {
+            toast.error(
+              "Transaction is still processing. Please try again later."
+            );
+            setTransactionState("verifying");
+            setOpenPaymentModal(false);
+          }
+        } else if (Number(decryptedResponse.data.TxnStatus) === 3) {
+          toast.success("Payment Successful");
+          setTransactionState("success");
+        } else {
+          toast.error("Payment Failed");
+          setTransactionState("failure");
+        }
+      } else {
+        toast.error(decryptedResponse.resultMessage);
+        setTransactionState("verifying");
+        setOpenPaymentModal(false);
+      }
+    } catch (error: any) {
+      setIsProcessing(false);
+      toast.error(error.message);
+      setOpenPaymentModal(false);
     }
   };
 
@@ -340,7 +376,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
                     </div>
                     {count === MAX_QR_TIMEOUT || count <= 0 ? (
                       <p className="text-xs text-gray-500 mt-2">
-                        The previous QR got expired{" "}
+                        Press button to show QR
                       </p>
                     ) : (
                       <p className="text-xs text-red-500 mt-2">
@@ -355,7 +391,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
               </div>
               <div className="mb-4">
                 <h3 className="text-base font-semibold mb-1">
-                  Pay With UPI ID/ Mobile Number
+                  Pay With UPI ID
                 </h3>
                 <div className="border p-4 rounded-md bg-white">
                   <Accordion type="single" collapsible className="w-full">
@@ -381,14 +417,14 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
                             htmlFor="upi-id"
                             className="ml-2 flex-1 items-center text-gray-700"
                           >
-                            UPI ID/ Mobile Number
+                            UPI ID
                           </label>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="mt-2">
                         <FormField
                           control={form.control}
-                          name="upiIdOrMobile"
+                          name="upiId"
                           render={({ field }) => (
                             <FormItem>
                               <FormControl>
@@ -397,7 +433,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
                                   autoFocus
                                   maxLength={50}
                                   id="upi-id-or-mobile"
-                                  placeholder="Enter UPI ID or Mobile Number"
+                                  placeholder="Enter UPI ID"
                                   className="w-full"
                                 />
                               </FormControl>
