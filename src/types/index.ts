@@ -9,7 +9,11 @@ export type PaymentGatewayProps = {
   order_id: string;
   merchantid: number;
   location: GeolocationPosition;
-  handler: (response: { payment_id: string }) => void;
+  handler: (response: {
+    TransactionId: string;
+    CustomerRefNo: string;
+    payment_id: string;
+  }) => void;
   prefill: {
     name: string;
     email: string;
@@ -40,6 +44,8 @@ export type Message = {
   type: EventType;
   payment_id?: string;
   message?: string;
+  TransactionId?: string;
+  CustomerRefNo?: string;
 };
 
 export type EventType =
@@ -66,7 +72,8 @@ export type APIEndPoints =
   | "/api/v1/requestupivalidateaddress"
   | "/api/v1/generatecollectrequest"
   | "/api/v1/generatedynamicqrcode"
-  | `/api/v1/getAllTransactionStatus?refId=${string}`;
+  | `/api/v1/getAllTransactionStatus?refId=${string}`
+  | string;
 
 export type APIResponseType = {
   resultCode: "200" | "400" | "500" | "000";
@@ -76,6 +83,10 @@ export type APIResponseType = {
 
 export type GetOrderDetailsAPIResponseType = {
   data: { name: string; authToken: string; ExpiryIn: number };
+} & APIResponseType;
+
+export type generatecollectrequestAPIResponseType = {
+  data: string;
 } & APIResponseType;
 
 export type requestupivalidateaddressType = {

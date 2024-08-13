@@ -49,6 +49,7 @@ import {
   GetTxnStatusAPI,
   PaymentGatewayProps,
   TransactionStatus,
+  generatecollectrequestAPIResponseType,
   requestupivalidateaddressType,
 } from "@/types";
 
@@ -120,7 +121,9 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       if (decryptedResponse.resultCode === "000") {
         setQRImage(decryptedResponse.data.qrCodeImage);
         startCountdown();
-        await getTxnStatus();
+        setTimeout(async () => {
+          await getTxnStatus();
+        }, 4000);
       } else {
         toast.error(decryptedResponse.resultMessage);
       }
@@ -135,10 +138,10 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
     setOpenPaymentModal(true);
     const body = {
       vpaAddress: values.upiId,
-      vpaHolderName: "Manishkumar Patel",
+      vpaHolderName: "NA",
       Latitude: config.location.coords.latitude,
       Longitude: config.location.coords.longitude,
-      Location: "400097",
+      Location: "NA",
     };
     const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
     const headers = {
@@ -197,7 +200,6 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       merchantid: config.merchantid,
       orderid: config.order_id,
     };
-    debugger;
     setIsProcessing(true);
 
     try {
@@ -206,14 +208,20 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         requestBody: encryptedBody,
         headers: headers,
       });
-      const decryptedResponse: GetOrderDetailsAPIResponseType = JSON.parse(
-        crypto.CryptoGraphDecrypt(res.data)
-      );
+      const decryptedResponse: generatecollectrequestAPIResponseType =
+        JSON.parse(crypto.CryptoGraphDecrypt(res.data));
+      const { data } = decryptedResponse;
+      const parsed = JSON.parse(data);
       setIsProcessing(false);
       console.log("decryptedResponse", decryptedResponse);
-      if (decryptedResponse.resultCode === "000") {
+      if (
+        decryptedResponse.resultCode === "200" ||
+        decryptedResponse.resultCode === "000"
+      ) {
         setTransactionState("processing");
-        await getTxnStatus();
+        setTimeout(async () => {
+          await getTxnStatus(Date.now(), parsed.TransactionId);
+        }, 2000);
       } else {
         toast.error(decryptedResponse.resultMessage);
         closeModal();
@@ -225,16 +233,22 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
     }
   };
 
-  const getTxnStatus = async (startTime: number = Date.now()) => {
+  const getTxnStatus = async (
+    startTime: number = Date.now(),
+    TransactionId?: string
+  ) => {
     const headers = {
       Authorization: `bearer ${orderDetails?.authToken}`,
       "x-api-key": "Basic TUExeEo1cHNhajp1eGZSTGUxbHd0S1k=",
       merchantid: config.merchantid,
     };
+    const url = TransactionId
+      ? `/api/v1/getAllTransactionStatus?refId=${config?.order_id}&TransactionId=${TransactionId}`
+      : `/api/v1/getAllTransactionStatus?refId=${config?.order_id}`;
 
     try {
       const res = await api.app.post<string>({
-        url: `/api/v1/getAllTransactionStatus?refId=${config?.order_id}`,
+        url: url,
         headers: headers,
         cancelToken: source.token,
       });
@@ -242,14 +256,17 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       const decryptedResponse: GetTxnStatusAPI = JSON.parse(decryptedJson);
       setIsProcessing(false);
       console.log("decryptedResponse", decryptedResponse);
-
-      if (decryptedResponse.resultCode === "000") {
+      const { data } = decryptedResponse;
+      if (
+        decryptedResponse.resultCode === "200" ||
+        decryptedResponse.resultCode === "000"
+      ) {
         if (Number(decryptedResponse.data.TxnStatus) === 1) {
           const elapsedTime = Date.now() - startTime;
           if (elapsedTime < 120000 && openPaymentModal) {
             setTimeout(() => {
               getTxnStatus(startTime);
-            }, 5000);
+            }, 2000);
           } else {
             toast.error(
               "Transaction is still processing. Please try again later."
@@ -265,6 +282,8 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
                 type: "TXN_SUCCESS",
                 message: "Payment Successful",
                 payment_id: config.order_id,
+                TransactionId: data.TransactionId,
+                CustomerRefNo: data.CustomerRefNo,
               },
               config.url
             );
