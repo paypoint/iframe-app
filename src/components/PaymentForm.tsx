@@ -114,6 +114,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       if (decryptedResponse.resultCode === "000") {
         setQRImage(decryptedResponse.data.qrCodeImage);
         startCountdown();
+        await getTxnStatus();
       } else {
         toast.error(decryptedResponse.resultMessage);
       }
@@ -162,7 +163,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
     } catch (error: any) {
       setIsProcessing(false);
       toast.error(error.message);
-      setOpenPaymentModal(false);
+      closeModal();
     }
   };
 
@@ -200,13 +201,12 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         await getTxnStatus();
       } else {
         toast.error(decryptedResponse.resultMessage);
-        setTransactionState("verifying");
-        setOpenPaymentModal(false);
+        closeModal();
       }
     } catch (error: any) {
       setIsProcessing(false);
       toast.error(error.message);
-      setOpenPaymentModal(false);
+      closeModal();
     }
   };
 
@@ -223,10 +223,9 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         requestBody: undefined,
         headers: headers,
       });
-
-      const decryptedResponse: GetTxnStatusAPI = JSON.parse(
-        crypto.CryptoGraphDecrypt(res.data)
-      );
+      const decryptedJson = crypto.CryptoGraphDecrypt(res.data);
+      debugger;
+      const decryptedResponse: GetTxnStatusAPI = JSON.parse(decryptedJson);
       setIsProcessing(false);
       console.log("decryptedResponse", decryptedResponse);
 
@@ -241,8 +240,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
             toast.error(
               "Transaction is still processing. Please try again later."
             );
-            setTransactionState("verifying");
-            setOpenPaymentModal(false);
+            closeModal();
           }
         } else if (Number(decryptedResponse.data.TxnStatus) === 3) {
           toast.success("Payment Successful");
@@ -253,14 +251,20 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         }
       } else {
         toast.error(decryptedResponse.resultMessage);
-        setTransactionState("verifying");
-        setOpenPaymentModal(false);
+        closeModal();
       }
     } catch (error: any) {
       setIsProcessing(false);
       toast.error(error.message);
-      setOpenPaymentModal(false);
+      closeModal();
     }
+  };
+
+  const closeModal = () => {
+    setOpenPaymentModal(false);
+    setTimeout(() => {
+      setTransactionState("verifying");
+    }, 500);
   };
 
   return (
@@ -380,10 +384,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
                       </p>
                     ) : (
                       <p className="text-xs text-red-500 mt-2">
-                        QR Code is valid for{" "}
-                        <span className="text-red-500">
-                          {formatCountdown(count)}
-                        </span>
+                        QR Code is valid for {formatCountdown(count)}
                       </p>
                     )}
                   </div>
@@ -466,7 +467,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
           <PaymentStatusModal
             state={transactionState}
             isOpen={openPaymentModal}
-            setIsOpen={setOpenPaymentModal}
+            onCloseModal={closeModal}
           />
         </div>
       </form>

@@ -5,6 +5,7 @@ export type PaymentGatewayProps = {
   currency: string;
   name: string;
   image: string;
+  receipt: string;
   order_id: string;
   merchantid: number;
   location: GeolocationPosition;

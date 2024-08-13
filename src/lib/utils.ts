@@ -12,7 +12,7 @@ export function formatCountdown(seconds: number): string {
   }
   const minutes: number = Math.floor(seconds / 60);
   const remainingSeconds: number = seconds % 60;
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")} minutes${
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")} minute${
     minutes !== 1 ? "s" : ""
   }`;
 }

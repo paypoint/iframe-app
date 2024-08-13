@@ -37,7 +37,7 @@ const App: React.FC = () => {
 
   const getOrderDetails = async (data: PaymentGatewayProps) => {
     const body = {
-      receipt: "U2408050019100233067",
+      receipt: data.receipt,
       amount: data.amount,
     };
     const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));

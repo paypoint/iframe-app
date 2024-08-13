@@ -12,14 +12,14 @@ import { TransactionStatus } from "@/types";
 
 type PaymentStatusModalProps = {
   isOpen: boolean;
-  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   state: TransactionStatus;
+  onCloseModal: () => void;
 };
 
 export function PaymentStatusModal({
   isOpen,
-  setIsOpen,
   state,
+  onCloseModal,
 }: PaymentStatusModalProps) {
   return (
     <Sheet modal open={isOpen}>
@@ -29,8 +29,7 @@ export function PaymentStatusModal({
             <>
               <SheetTitle>Invalid Input</SheetTitle>
               <SheetDescription>
-                The UPI ID/ Mobile Number you entered is invalid. Please check
-                and try again.
+                The UPI ID you entered is invalid. Please check and try again.
               </SheetDescription>
             </>
           )}
@@ -67,8 +66,8 @@ export function PaymentStatusModal({
           <>
             <Separator className="my-4" />
             <div className="text-xs flex justify-center items-center">
-              {state !== "invalid" && "Wrong UPI ID/ Mobile Number? "}
-              <Button variant={"link"} onClick={() => setIsOpen(false)}>
+              {state !== "invalid" && "Wrong UPI ID? "}
+              <Button variant={"link"} onClick={() => onCloseModal()}>
                 Cancel Payment
               </Button>
             </div>
