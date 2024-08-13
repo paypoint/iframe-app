@@ -49,6 +49,7 @@ import {
   GetTxnStatusAPI,
   PaymentGatewayProps,
   TransactionStatus,
+  requestupivalidateaddressType,
 } from "@/types";
 
 interface PaymentFormProps {
@@ -154,14 +155,14 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         headers: headers,
         cancelToken: source.token,
       });
-      const decryptedResponse: GetOrderDetailsAPIResponseType = JSON.parse(
+      const decryptedResponse: requestupivalidateaddressType = JSON.parse(
         crypto.CryptoGraphDecrypt(res.data)
       );
       setIsProcessing(false);
       console.log("decryptedResponse", decryptedResponse.data);
       if (decryptedResponse.resultCode === "000") {
         setTransactionState("processing");
-        await generateCollectRequest();
+        await generateCollectRequest(decryptedResponse.data.vpaHolderName);
       } else {
         setTransactionState("invalid");
         toast.error(decryptedResponse.resultMessage);
@@ -180,10 +181,10 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
     }
   };
 
-  const generateCollectRequest = async () => {
+  const generateCollectRequest = async (vpaHolderName: string) => {
     const body = {
       vpaAddress: form.getValues("upiId"),
-      vpaHolderName: "Manishkumar Patel",
+      vpaHolderName: vpaHolderName,
       Amount: config.amount,
       Latitude: config.location.coords.latitude,
       Longitude: config.location.coords.longitude,
@@ -196,6 +197,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       merchantid: config.merchantid,
       orderid: config.order_id,
     };
+    debugger;
     setIsProcessing(true);
 
     try {
@@ -237,7 +239,6 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         cancelToken: source.token,
       });
       const decryptedJson = crypto.CryptoGraphDecrypt(res.data);
-      debugger;
       const decryptedResponse: GetTxnStatusAPI = JSON.parse(decryptedJson);
       setIsProcessing(false);
       console.log("decryptedResponse", decryptedResponse);
@@ -245,7 +246,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       if (decryptedResponse.resultCode === "000") {
         if (Number(decryptedResponse.data.TxnStatus) === 1) {
           const elapsedTime = Date.now() - startTime;
-          if (elapsedTime < 120000) {
+          if (elapsedTime < 120000 && openPaymentModal) {
             setTimeout(() => {
               getTxnStatus(startTime);
             }, 5000);
@@ -258,6 +259,16 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         } else if (Number(decryptedResponse.data.TxnStatus) === 3) {
           toast.success("Payment Successful");
           setTransactionState("success");
+          setTimeout(() => {
+            sendMessageToParent(
+              {
+                type: "TXN_SUCCESS",
+                message: "Payment Successful",
+                payment_id: config.order_id,
+              },
+              config.url
+            );
+          }, 5000);
         } else {
           toast.error("Payment Failed");
           setTransactionState("failure");
@@ -296,7 +307,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
             <div className="flex items-center">
               <Avatar>
                 <AvatarImage src={config?.image} alt="Merchant Logo" />
-                <AvatarFallback>P</AvatarFallback>
+                <AvatarFallback>D</AvatarFallback>
               </Avatar>
               <div className="ml-4">
                 <h2 className="text-white text-lg font-semibold">

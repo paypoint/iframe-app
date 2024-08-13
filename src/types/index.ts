@@ -78,6 +78,10 @@ export type GetOrderDetailsAPIResponseType = {
   data: { name: string; authToken: string; ExpiryIn: number };
 } & APIResponseType;
 
+export type requestupivalidateaddressType = {
+  data: { vpaHolderName: string; EntityType: string; MCC: number };
+} & APIResponseType;
+
 export type GenerateQRCodeAPIResponseType = {
   data: { qrCodeImage: string };
 } & APIResponseType;

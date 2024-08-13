@@ -9,6 +9,8 @@ import {
 import { Separator } from "./ui/separator";
 import Loader from "./loader";
 import { TransactionStatus } from "@/types";
+import { useCountdown } from "usehooks-ts";
+import { useEffect } from "react";
 
 type PaymentStatusModalProps = {
   isOpen: boolean;
@@ -21,6 +23,16 @@ export function PaymentStatusModal({
   state,
   onCloseModal,
 }: PaymentStatusModalProps) {
+  const [count, { startCountdown, resetCountdown }] = useCountdown({
+    countStart: 5,
+    intervalMs: 1000,
+  });
+
+  useEffect(() => {
+    if (state === "success") {
+      startCountdown();
+    }
+  }, [state]);
   return (
     <Sheet modal open={isOpen}>
       <SheetContent side={"bottom"}>
@@ -37,7 +49,7 @@ export function PaymentStatusModal({
             <>
               <SheetTitle>Verifying</SheetTitle>
               <SheetDescription>
-                We are verifying your mobile number/UPI ID. Please wait.
+                We are verifying your UPI ID. Please wait.
               </SheetDescription>
               <Loader />
             </>
@@ -56,7 +68,8 @@ export function PaymentStatusModal({
             <>
               <SheetTitle>Payment Successful</SheetTitle>
               <SheetDescription>
-                Your payment was successful. Thank you!
+                Your payment was successful. Thank you! <br />
+                <p className="text-xs text-gray-500 mt-2">Closing in {count}</p>
               </SheetDescription>
             </>
           )}
