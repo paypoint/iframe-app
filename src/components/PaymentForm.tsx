@@ -220,7 +220,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       ) {
         setTransactionState("processing");
         setTimeout(async () => {
-          await getTxnStatus(Date.now(), parsed.TransactionId);
+          await getTxnStatus(undefined, parsed.TransactionId);
         }, 2000);
       } else {
         toast.error(decryptedResponse.resultMessage);
@@ -263,7 +263,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       ) {
         if (Number(decryptedResponse.data.TxnStatus) === 1) {
           const elapsedTime = Date.now() - startTime;
-          if (elapsedTime < 120000 && openPaymentModal) {
+          if (elapsedTime < 120000) {
             setTimeout(() => {
               getTxnStatus(startTime);
             }, 2000);
