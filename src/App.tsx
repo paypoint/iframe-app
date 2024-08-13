@@ -17,12 +17,13 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handleMessage = async (event: {
+      origin: string;
       data: { type: string; message: string };
     }) => {
       if (event.data.type === "SET_CONFIG") {
         const data = JSON.parse(event.data.message) as PaymentGatewayProps;
         if (data) {
-          await getOrderDetails(data);
+          await getOrderDetails(data, event.origin);
           setConfig(data);
         }
       }
@@ -35,16 +36,18 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const getOrderDetails = async (data: PaymentGatewayProps) => {
+  const getOrderDetails = async (data: PaymentGatewayProps, origin: string) => {
     const body = {
       receipt: data.receipt,
       amount: data.amount,
+      domain: origin,
     };
     const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
     const headers = {
       "x-api-key": "Basic TUExeEo1cHNhajp1eGZSTGUxbHd0S1k=",
       merchantid: data.merchantid,
       orderid: data.order_id,
+      domain: origin,
     };
     try {
       const res = await api.app.post<string>({

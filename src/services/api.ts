@@ -1,6 +1,6 @@
 import { siteConfig } from "@/lib/config";
 import { APIEndPoints } from "@/types";
-import axios from "axios";
+import axios, { type CancelToken } from "axios";
 
 export const baseURL = siteConfig.API_UAT_URL;
 
@@ -9,26 +9,29 @@ const client = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 20000,
 });
 
-type Request = { url: APIEndPoints; requestBody?: string; headers: any };
+type Request = {
+  url: APIEndPoints;
+  requestBody?: string;
+  headers: any;
+  cancelToken?: CancelToken;
+};
 
 class App {
-  post<TResponse>({ url, requestBody, headers }: Request) {
-    return client.post<TResponse>(
-      url,
-      {
-        requestBody,
-      },
-      {
-        headers: headers,
-      }
-    );
+  post<TResponse>({ url, requestBody, headers, cancelToken }: Request) {
+    const body = requestBody ? { requestBody } : undefined;
+    return client.post<TResponse>(url, body, {
+      headers: headers,
+      cancelToken: cancelToken,
+    });
   }
 
-  get<TResponse>({ url }: Request) {
+  get<TResponse>({ url, cancelToken }: Request) {
     return client.get<TResponse>(url, {
       data: {},
+      cancelToken: cancelToken,
     });
   }
 }

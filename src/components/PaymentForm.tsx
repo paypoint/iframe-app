@@ -4,6 +4,7 @@ import { useCountdown } from "usehooks-ts";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import axios from "axios";
 import * as z from "zod";
 
 import {
@@ -29,6 +30,7 @@ import phonepe from "@/assets/phonepe.svg";
 import googlepay from "@/assets/googlepay.svg";
 import cred from "@/assets/cred_circle.png";
 import paytm from "@/assets/paytm.svg";
+import digikhata from "@/assets/digikhata.png";
 import placeHolderQrImage from "@/assets/placeholder-qr.svg";
 
 import {
@@ -82,6 +84,9 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       upiId: "",
     },
   });
+
+  const CancelToken = axios.CancelToken;
+  const source = CancelToken.source();
 
   const onLoadQR = async () => {
     resetCountdown();
@@ -147,6 +152,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         url: "/api/v1/requestupivalidateaddress",
         requestBody: encryptedBody,
         headers: headers,
+        cancelToken: source.token,
       });
       const decryptedResponse: GetOrderDetailsAPIResponseType = JSON.parse(
         crypto.CryptoGraphDecrypt(res.data)
@@ -161,9 +167,16 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         toast.error(decryptedResponse.resultMessage);
       }
     } catch (error: any) {
+      console.log(error);
       setIsProcessing(false);
-      toast.error(error.message);
       closeModal();
+      if (axios.isCancel(error)) {
+        console.log("Request canceled:", error.message);
+      } else if (error.code === "ECONNABORTED") {
+        console.log("Request timed out");
+      } else {
+        toast.error(error.message);
+      }
     }
   };
 
@@ -220,8 +233,8 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
     try {
       const res = await api.app.post<string>({
         url: `/api/v1/getAllTransactionStatus?refId=${config?.order_id}`,
-        requestBody: undefined,
         headers: headers,
+        cancelToken: source.token,
       });
       const decryptedJson = crypto.CryptoGraphDecrypt(res.data);
       debugger;
@@ -254,9 +267,16 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
         closeModal();
       }
     } catch (error: any) {
+      console.log(error);
       setIsProcessing(false);
-      toast.error(error.message);
       closeModal();
+      if (axios.isCancel(error)) {
+        console.log("Request canceled:", error.message);
+      } else if (error.code === "ECONNABORTED") {
+        console.log("Request timed out");
+      } else {
+        toast.error(error.message);
+      }
     }
   };
 
@@ -265,6 +285,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
     setTimeout(() => {
       setTransactionState("verifying");
     }, 500);
+    source.cancel("Operation canceled by the user.");
   };
 
   return (
@@ -358,6 +379,12 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
                     </p>
                     <div className="flex space-x-2 mt-2">
                       <img width={16} height={16} src={bhim} alt="bhim-logo" />
+                      <img
+                        width={16}
+                        height={16}
+                        src={digikhata}
+                        alt="digikhata-logo"
+                      />
                       <img
                         width={16}
                         height={16}

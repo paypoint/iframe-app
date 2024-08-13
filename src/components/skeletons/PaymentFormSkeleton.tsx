@@ -23,7 +23,7 @@ const PaymentFormSkeleton: FC = () => {
               <div className="ml-4 flex-1">
                 <div className="h-3 bg-gray-300 rounded w-36 mb-2"></div>
                 <div className="flex space-x-2 mt-2">
-                  {[...Array(5)].map((_, index) => (
+                  {[...Array(6)].map((_, index) => (
                     <div
                       key={index}
                       className="w-4 h-4 bg-gray-300 rounded-full"
