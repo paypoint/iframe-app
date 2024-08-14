@@ -98,8 +98,8 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
     const body = {
       CollectExpiryAfter: 5,
       Amount: config.amount,
-      Latitude: config.location.coords.latitude,
-      Longitude: config.location.coords.longitude,
+      Latitude: config.location.latitude,
+      Longitude: config.location.longitude,
       Location: "NA",
     };
     const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
@@ -143,8 +143,8 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
     const body = {
       vpaAddress: values.upiId,
       vpaHolderName: "NA",
-      Latitude: config.location.coords.latitude,
-      Longitude: config.location.coords.longitude,
+      Latitude: config.location.latitude,
+      Longitude: config.location.longitude,
       Location: "NA",
     };
     const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
@@ -193,8 +193,8 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       vpaAddress: form.getValues("upiId"),
       vpaHolderName: vpaHolderName,
       Amount: config.amount,
-      Latitude: config.location.coords.latitude,
-      Longitude: config.location.coords.longitude,
+      Latitude: config.location.latitude,
+      Longitude: config.location.longitude,
       Location: "NA",
     };
     const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
@@ -277,37 +277,37 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
           return;
         }
         throw new Error("Transaction timed out after 7 minutes");
-      }
-
-      if (typeof data === "object" && data.TxnStatus !== undefined) {
+      } else if (typeof data === "object" && data.TxnStatus !== undefined) {
         const txnStatus = Number(data.TxnStatus);
-
-        if (txnStatus === 1 && elapsedTime < timeoutDuration) {
-          setTimeout(() => getTxnStatus(startTime, TransactionId), 5000);
-          return;
-        }
-
-        if (txnStatus === 3) {
-          if (!TransactionId) {
-            setOpenPaymentModal(true);
+        if (elapsedTime < timeoutDuration) {
+          if (txnStatus === 1) {
+            setTimeout(() => getTxnStatus(startTime, TransactionId), 5000);
+            return;
+          } else if (txnStatus === 3) {
+            if (!TransactionId) {
+              setOpenPaymentModal(true);
+            }
+            toast.success("Payment Successful");
+            setTransactionState("success");
+            setTimeout(() => {
+              sendMessageToParent(
+                {
+                  type: "TXN_SUCCESS",
+                  message: "Payment Successful",
+                  payment_id: config.order_id,
+                  TransactionId: data.TransactionId,
+                  CustomerRefNo: data.CustomerRefNo,
+                },
+                config.url
+              );
+            }, 5000);
+            return;
+          } else {
+            toast.success("Payment Failed");
+            closeModal();
+            return;
           }
-          toast.success("Payment Successful");
-          setTransactionState("success");
-          setTimeout(() => {
-            sendMessageToParent(
-              {
-                type: "TXN_SUCCESS",
-                message: "Payment Successful",
-                payment_id: config.order_id,
-                TransactionId: data.TransactionId,
-                CustomerRefNo: data.CustomerRefNo,
-              },
-              config.url
-            );
-          }, 5000);
-          return;
         }
-
         throw new Error("Transaction timed out after 7 minutes");
       }
 
@@ -388,41 +388,45 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
                   Pay With UPI QR
                 </h3>
                 <div className="border p-4 rounded-md flex  bg-white">
-                  <img
-                    src={
-                      count === MAX_QR_TIMEOUT || count <= 0
-                        ? placeHolderQrImage
-                        : qRImage
-                    }
-                    alt="QR Code"
-                    className="w-36 h-36"
-                    width="100"
-                    height="100"
-                    style={{
-                      aspectRatio: "100/100",
-                      objectFit: "cover",
-                      filter:
+                  <div className="relative">
+                    <img
+                      src={
                         count === MAX_QR_TIMEOUT || count <= 0
-                          ? "blur(2px)"
-                          : "",
-                    }}
-                  />
-                  {(count === MAX_QR_TIMEOUT || count <= 0) && (
-                    <Button
-                      disabled={isProcessing}
-                      size={"xs"}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        onLoadQR();
+                          ? placeHolderQrImage
+                          : qRImage
+                      }
+                      alt="QR Code"
+                      className="w-72 h-36"
+                      width="100"
+                      height="100"
+                      style={{
+                        aspectRatio: "100/100",
+                        objectFit: "cover",
+                        filter:
+                          count === MAX_QR_TIMEOUT || count <= 0
+                            ? "blur(2px)"
+                            : "",
                       }}
-                      className={cn(
-                        "absolute top-48 left-[4.2rem] z-10 px-4",
-                        isProcessing && "animate-pulse"
-                      )}
-                    >
-                      Load QR
-                    </Button>
-                  )}
+                    />
+                    {(count === MAX_QR_TIMEOUT || count <= 0) && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Button
+                          disabled={isProcessing}
+                          size={"xs"}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            onLoadQR();
+                          }}
+                          className={cn(
+                            "px-4",
+                            isProcessing && "animate-pulse"
+                          )}
+                        >
+                          Load QR
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                   <div className="ml-4">
                     <p className="text-gray-700">
                       Scan the QR using any UPI app on your phone.
