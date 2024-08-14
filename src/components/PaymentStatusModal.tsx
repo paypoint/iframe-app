@@ -23,7 +23,7 @@ export function PaymentStatusModal({
   state,
   onCloseModal,
 }: PaymentStatusModalProps) {
-  const [count, { startCountdown, resetCountdown }] = useCountdown({
+  const [count, { startCountdown }] = useCountdown({
     countStart: 5,
     intervalMs: 1000,
   });
@@ -33,6 +33,7 @@ export function PaymentStatusModal({
       startCountdown();
     }
   }, [state]);
+
   return (
     <Sheet modal open={isOpen}>
       <SheetContent side={"bottom"}>
@@ -69,7 +70,9 @@ export function PaymentStatusModal({
               <SheetTitle>Payment Successful</SheetTitle>
               <SheetDescription>
                 Your payment was successful. Thank you! <br />
-                <p className="text-xs text-gray-500 mt-2">Closing in {count}</p>
+                <span className="text-xs text-gray-500 mt-2">
+                  Closing in {count}
+                </span>
               </SheetDescription>
             </>
           )}

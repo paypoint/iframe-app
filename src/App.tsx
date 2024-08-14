@@ -68,7 +68,7 @@ const App: React.FC = () => {
       }
     } catch (error: any) {
       sendMessageToParent(
-        { type: "API_ERROR", message: error.message },
+        { type: "ERROR", message: error.message },
         config?.url
       );
     }

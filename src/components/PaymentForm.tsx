@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useRef, useState } from "react";
 import { X, BadgeCheck } from "lucide-react";
 import { useCountdown } from "usehooks-ts";
 import { useForm } from "react-hook-form";
@@ -80,6 +80,8 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
     intervalMs: 1000,
   });
 
+  const isTransactionCancelledRef = useRef(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -98,7 +100,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       Amount: config.amount,
       Latitude: config.location.coords.latitude,
       Longitude: config.location.coords.longitude,
-      Location: "400097",
+      Location: "NA",
     };
     const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
     const headers = {
@@ -121,6 +123,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       if (decryptedResponse.resultCode === "000") {
         setQRImage(decryptedResponse.data.qrCodeImage);
         startCountdown();
+        isTransactionCancelledRef.current = false;
         setTimeout(async () => {
           await getTxnStatus();
         }, 4000);
@@ -136,6 +139,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setOpenPaymentModal(true);
+    isTransactionCancelledRef.current = false;
     const body = {
       vpaAddress: values.upiId,
       vpaHolderName: "NA",
@@ -191,7 +195,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       Amount: config.amount,
       Latitude: config.location.coords.latitude,
       Longitude: config.location.coords.longitude,
-      Location: "400097",
+      Location: "NA",
     };
     const encryptedBody = crypto.CryptoGraphEncrypt(JSON.stringify(body));
     const headers = {
@@ -220,7 +224,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       ) {
         setTransactionState("processing");
         setTimeout(async () => {
-          await getTxnStatus(undefined, parsed.TransactionId);
+          await getTxnStatus(Date.now(), parsed.TransactionId);
         }, 2000);
       } else {
         toast.error(decryptedResponse.resultMessage);
@@ -237,43 +241,56 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
     startTime: number = Date.now(),
     TransactionId?: string
   ) => {
+    if (isTransactionCancelledRef.current) return;
     const headers = {
       Authorization: `bearer ${orderDetails?.authToken}`,
       "x-api-key": "Basic TUExeEo1cHNhajp1eGZSTGUxbHd0S1k=",
       merchantid: config.merchantid,
     };
-    const url = TransactionId
-      ? `/api/v1/getAllTransactionStatus?refId=${config?.order_id}&TransactionId=${TransactionId}`
-      : `/api/v1/getAllTransactionStatus?refId=${config?.order_id}`;
+    const url = `/api/v1/getAllTransactionStatus?refId=${config?.order_id}${
+      TransactionId ? `&TransactionId=${TransactionId}` : ""
+    }`;
 
     try {
       const res = await api.app.post<string>({
-        url: url,
-        headers: headers,
+        url,
+        headers,
         cancelToken: source.token,
       });
-      const decryptedJson = crypto.CryptoGraphDecrypt(res.data);
-      const decryptedResponse: GetTxnStatusAPI = JSON.parse(decryptedJson);
+
+      const decryptedResponse: GetTxnStatusAPI = JSON.parse(
+        crypto.CryptoGraphDecrypt(res.data)
+      );
       setIsProcessing(false);
-      console.log("decryptedResponse", decryptedResponse);
-      const { data } = decryptedResponse;
-      if (
-        decryptedResponse.resultCode === "200" ||
-        decryptedResponse.resultCode === "000"
-      ) {
-        if (Number(decryptedResponse.data.TxnStatus) === 1) {
-          const elapsedTime = Date.now() - startTime;
-          if (elapsedTime < 120000) {
-            setTimeout(() => {
-              getTxnStatus(startTime);
-            }, 2000);
-          } else {
-            toast.error(
-              "Transaction is still processing. Please try again later."
-            );
-            closeModal();
+
+      const { data, resultCode } = decryptedResponse;
+      const elapsedTime = Date.now() - startTime;
+      const timeoutDuration = 7 * 60 * 1000; // 7 minutes in milliseconds
+
+      if (!["200", "000"].includes(resultCode)) {
+        throw new Error("Invalid response code");
+      }
+
+      if (typeof data === "string" || !data) {
+        if (elapsedTime < timeoutDuration) {
+          setTimeout(() => getTxnStatus(startTime, TransactionId), 5000);
+          return;
+        }
+        throw new Error("Transaction timed out after 7 minutes");
+      }
+
+      if (typeof data === "object" && data.TxnStatus !== undefined) {
+        const txnStatus = Number(data.TxnStatus);
+
+        if (txnStatus === 1 && elapsedTime < timeoutDuration) {
+          setTimeout(() => getTxnStatus(startTime, TransactionId), 5000);
+          return;
+        }
+
+        if (txnStatus === 3) {
+          if (!TransactionId) {
+            setOpenPaymentModal(true);
           }
-        } else if (Number(decryptedResponse.data.TxnStatus) === 3) {
           toast.success("Payment Successful");
           setTransactionState("success");
           setTimeout(() => {
@@ -288,16 +305,17 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
               config.url
             );
           }, 5000);
-        } else {
-          toast.error("Payment Failed");
-          setTransactionState("failure");
+          return;
         }
-      } else {
-        toast.error(decryptedResponse.resultMessage);
-        closeModal();
+
+        throw new Error("Transaction timed out after 7 minutes");
       }
+
+      throw new Error(
+        "Transaction is still processing. Please try again later."
+      );
     } catch (error: any) {
-      console.log(error);
+      console.error(error);
       setIsProcessing(false);
       closeModal();
       if (axios.isCancel(error)) {
@@ -316,6 +334,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
       setTransactionState("verifying");
     }, 500);
     source.cancel("Operation canceled by the user.");
+    isTransactionCancelledRef.current = true;
   };
 
   return (
@@ -342,15 +361,16 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
             </div>
             <Button
               disabled={isProcessing}
-              onClick={() =>
+              onClick={(e) => {
+                e.preventDefault();
                 sendMessageToParent(
                   {
                     type: "USER_DISMISSED_HOME_PAGE",
                     message: "User dismissed payment modal",
                   },
                   config.url
-                )
-              }
+                );
+              }}
               size={"icon"}
               className={cn(
                 "hover:bg-accent/10 hover:text-accent-foreground",

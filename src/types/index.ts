@@ -98,24 +98,27 @@ export type GenerateQRCodeAPIResponseType = {
 } & APIResponseType;
 
 export type GetTxnStatusAPI = {
-  data: {
-    TransactionId: string;
-    MessageId: string;
-    ReferenceId: string;
-    CustomerRefNo: string;
-    TransactionDate: string;
-    TxnTypeName: string;
-    TxnStatus: 1 | 2 | 3;
-    PayerAddress: string;
-    PayerName: string;
-    PayeeAddress: string;
-    PayeeName: string;
-    Amount: number;
-    TxnRemarks: string;
-    ResponseMessage: string;
-    CollectTxnStatus: number;
-    ApproveOrDecline: number;
-    PayerAccountNumber?: any;
-    PayeeAccountNumber?: any;
-  };
+  data:
+    | {
+        TransactionId: string;
+        MessageId: string;
+        ReferenceId: string;
+        CustomerRefNo: string;
+        TransactionDate: string;
+        TxnTypeName: string;
+        TxnStatus: 1 | 2 | 3;
+        PayerAddress: string;
+        PayerName: string;
+        PayeeAddress: string;
+        PayeeName: string;
+        Amount: number;
+        TxnRemarks: string;
+        ResponseMessage: string;
+        CollectTxnStatus: number;
+        ApproveOrDecline: number;
+        PayerAccountNumber?: any;
+        PayeeAccountNumber?: any;
+      }
+    | "Pending"
+    | string;
 } & APIResponseType;
