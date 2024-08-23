@@ -68,7 +68,7 @@ const formSchema = z.object({
 });
 
 const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
-  const MAX_QR_TIMEOUT = 420;
+  const MAX_QR_TIMEOUT = 7 * 60;
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [openPaymentModal, setOpenPaymentModal] = useState(false);
@@ -265,7 +265,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
 
       const { data, resultCode } = decryptedResponse;
       const elapsedTime = Date.now() - startTime;
-      const timeoutDuration = 7 * 60 * 1000; // 7 minutes in milliseconds
+      const timeoutDuration = MAX_QR_TIMEOUT * 1000;
 
       if (!["200", "000"].includes(resultCode)) {
         throw new Error("Invalid response code");
@@ -303,7 +303,7 @@ const PaymentForm: FC<PaymentFormProps> = ({ config, orderDetails }) => {
             }, 5000);
             return;
           } else {
-            toast.success("Payment Failed");
+            toast.error("Payment Failed");
             closeModal();
             return;
           }
