@@ -73,7 +73,7 @@ export type APIEndPoints =
   | "/api/v1/generatecollectrequest"
   | "/api/v1/generatedynamicqrcode"
   | `/api/v1/getAllTransactionStatus?refId=${string}`
-  | string;
+  | "/api/v1/generatedynamicqrcodestring";
 
 export type APIResponseType = {
   resultCode: "200" | "400" | "500" | "000";
@@ -95,6 +95,10 @@ export type requestupivalidateaddressType = {
 
 export type GenerateQRCodeAPIResponseType = {
   data: { qrCodeImage: string };
+} & APIResponseType;
+
+export type GenerateQRStringAPIResponseType = {
+  data: { qrCodeString: string };
 } & APIResponseType;
 
 export type GetTxnStatusAPI = {
