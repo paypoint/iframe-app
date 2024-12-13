@@ -37,6 +37,7 @@
     @apply border-border;
   }
   body {
+    overflow: hidden;
     @apply text-foreground;
   }
 }
